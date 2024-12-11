@@ -6,13 +6,14 @@ import motor.motor_asyncio
 DB_URL = os.environ.get("DB_URL", "mongodb+srv://KarthikMovies:KarthikUK007@cluster0.4l5byki.mongodb.net/?retryWrites=true&w=majority")
 DB_NAME = os.environ.get("DB_NAME", "Cluster0")
 
-# Initialize Database Class
 class Database:
     def __init__(self, uri, database_name):
         self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
         self.db = self._client[database_name]
         self.users = self.db.UsersData
         self.channels = self.db.ChannelsData  # Collection for source and destination channels
+        self.messages = self.db.Messages  # Collection for storing messages
+        self.replacement_data = self.db.ReplacementData  # Collection for replacement logs
 
     async def add_channel(self, source_channel, destination_channel):
         # Add source and destination channels to the database
@@ -35,5 +36,38 @@ class Database:
         result = await self.channels.delete_one({"source_channel": source_channel})
         return result.deleted_count > 0
 
-# MongoDB instance
-u_db = Database(DB_URL, DB_NAME)
+    async def replace_text(self, source_channel, old_text, new_text):
+        """
+        Replaces specific text in messages from a source channel.
+        :param source_channel: ID of the source channel
+        :param old_text: Text to replace
+        :param new_text: Replacement text
+        :return: Count of updated messages
+        """
+        updated_count = 0
+
+        # Find matching messages in the collection
+        async for message_doc in self.messages.find({"source_channel": source_channel}):
+            if old_text in message_doc.get("message", ""):
+                # Replace the specified text in the message
+                updated_message = message_doc["message"].replace(old_text, new_text)
+
+                # Update the document in the database
+                await self.messages.update_one(
+                    {"_id": message_doc["_id"]},
+                    {"$set": {"message": updated_message}}
+                )
+                updated_count += 1
+
+        # Log the replacement operation
+        replacement_data = {
+            "source_channel": source_channel,
+            "original_text": old_text,
+            "new_text": new_text,
+            "replaced_count": updated_count,
+            "timestamp": datetime.datetime.now()
+        }
+        await self.replacement_data.insert_one(replacement_data)
+
+        return updated_count
+        
