@@ -40,7 +40,8 @@ async def links(c: Client, m: Message):
             [InlineKeyboardButton("2TamilRockers", url="https://t.me/+Un9tkoLZVz41NDk1")]
         ])
     )
-    
+
+# first source commands
 @Client.on_message(filters.command("set_channels") & filters.user(OWNER_ID))
 async def set_channels(client, message):
     try:
@@ -107,6 +108,92 @@ async def get_channels(client, message):
             
             # Fetch replacement details for the source channel
             replacement_log = await u_db.replacement_data.find_one({"source_channel": source_channel})
+            
+            if replacement_log:
+                # If there's replacement data, include it in the response
+                original_text = replacement_log["original_text"]
+                new_text = replacement_log["new_text"]
+                replaced_count = replacement_log["replaced_count"]
+                replace_info = f" (Replaced '{original_text}' with '{new_text}' in {replaced_count} messages)"
+            else:
+                replace_info = " (No replacements)"
+
+            # Append the channel and replacement details to the response
+            response += f"Source Channel: {source_channel}, Destination Channel: {destination_channel}{replace_info}\n"
+
+        # Send the response
+        await message.reply(response)
+
+    except Exception as e:
+        await message.reply(f"Failed to retrieve channels or replacement data: {str(e)}")
+
+# second source commands 
+@Client.on_message(filters.command("set_channels2") & filters.user(OWNER_ID))
+async def set_channels(client, message):
+    try:
+        # Extract the command parameters
+        command_parts = message.text.split(" ", 3)  # Split into 4 parts: command, sources, destination, text
+        if len(command_parts) != 4:
+            await message.reply("Usage: /set_channels2 <source_channels(comma-separated)> <destination_channel> <original_text>:<new_text>")
+            return
+
+        # Extract source channels, destination channel, and replacement text
+        source_channels = list(map(int, command_parts[1].split(",")))  # Comma-separated sources
+        destination_channel = int(command_parts[2])
+        replace_parts = command_parts[3].split(":")  # Extract original and new text (e.g., /ql:/ql1)
+        if len(replace_parts) != 2:
+            await message.reply("Text replacement must be in the format: <original_text>:<new_text>")
+            return
+
+        original_text, new_text = replace_parts
+
+        # Add channels to the database
+        for source_channel in source_channels:
+            await u_db.add_channel_tb(source_channel, destination_channel)
+
+        # Replace text in messages (using replace_text)
+        modified_count = 0
+        for source_channel in source_channels:
+            modified_count += await u_db.replace_text_tb(
+                collection_name="Messages",
+                filter_query={"source_channel": source_channel},
+                old_text=original_text,
+                new_text=new_text,
+            )
+
+        # Store replacement details in the database
+        replacement_data = {
+            "source_channels": source_channels,
+            "destination_channel": destination_channel,
+            "original_text": original_text,
+            "new_text": new_text,
+            "replaced_count": modified_count,
+            "timestamp": datetime.datetime.now(),
+        }
+        await u_db.add_channel_tb("ReplacementData", replacement_data)
+
+        await message.reply(
+            f"Channels added successfully: Sources: {', '.join(map(str, source_channels))}, "
+            f"Destination: {destination_channel}\n"
+            f"Text replacement complete: {modified_count} messages updated."
+        )
+    except Exception as e:
+        await message.reply(f"Failed to add channels or replace text: {str(e)}")
+
+@Client.on_message(filters.command("get_channels2"))
+async def get_channels(client, message):
+    try:
+        # Retrieve all source-destination channel pairs
+        channels = await u_db.get_all_channels_tb()
+
+        # Prepare response for the channels and replace text details
+        response = "Source-Destination Channels:\n"
+        for channel in channels:
+            source_channel = channel["source_channel"]
+            destination_channel = channel["destination_channel"]
+            
+            # Fetch replacement details for the source channel
+            replacement_log = await u_db.replacement_data_tb.find_one({"source_channel": source_channel})
             
             if replacement_log:
                 # If there's replacement data, include it in the response
