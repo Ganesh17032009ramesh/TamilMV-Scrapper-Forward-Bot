@@ -15,7 +15,7 @@ pyrogram.utils.MIN_CHANNEL_ID = -100999999999999
 
 id_pattern = re.compile(r'^.\d+$') 
 
-BOT_TOKEN = os.environ.get("TOKEN", "7713324413:AAGYzSbK5Z9KbhaJGiQdA7Rs-YaYLk4fNiU")
+BOT_TOKEN = os.environ.get("TOKEN", "6502200200:AAExzSPuFw8H4nIjDUHOj3RG8aZv1fZdpoM")
 API_ID = int(os.environ.get("API_ID", 11973721))
 API_HASH = os.environ.get("API_HASH", "5264bf4663e9159565603522f58d3c18")
 BOT_UPTIME = time.time()
