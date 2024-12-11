@@ -2,6 +2,7 @@ from pyrogram import enums
 import os, asyncio
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
+from telethon.tl.types import PeerChannel
 
 API_ID = int(os.environ.get("API_ID",11973721))
 API_HASH = os.environ.get("API_HASH", "5264bf4663e9159565603522f58d3c18")
@@ -9,68 +10,51 @@ STRING_SESSION = os.environ.get("STRING_SESSION", "1BVtsOKEBu5Pf_Oesjuxt4TIzNijt
 #SOURCE_CHANNELS = list(
 #    map(int, os.environ.get("SOURCE_CHANNELS", "-1001822541447 -1002056074553 -1001864825324").split(" "))
 #)
-SOURCE_CHANNEL = int(os.environ.get("SOURCE_CHANNEL", -1001864825324))
-SOURCE_CHANNEL_1 = int(os.environ.get("SOURCE_CHANNEL_1", -1001822541447))
-SOURCE_CHANNEL_2 = int(os.environ.get("SOURCE_CHANNEL_2", -100182254848494847))
-DESTINATION_CHANNEL = int(os.environ.get("DESTINATION_CHANNEL", -1001542301808))
-DESTINATION_CHANNEL_1 = int(os.environ.get("DESTINATION_CHANNEL_1", -1001542301808))
-DESTINATION_CHANNEL_2 = int(os.environ.get("DESTINATION_CHANNEL_2", -1001542301808))
 
 app = TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH).start()
 
 @app.on(events.NewMessage)
 async def forward_message(event):
     try:
-        # Fetch the channel mappings from the database
-        channels = await u_db.get_all_channels()
+        # Get the source channel ID (where the message is coming from)
+        source_channel_id = event.chat_id
+
+        # Retrieve the destination channel based on the source channel from the database
+        channel_data = await u_db.channels.find_one({"source_channel": source_channel_id})
         
-        # Check for each channel mapping and forward the message
-        for channel in channels:
-            if event.chat_id == channel['source_channel']:
-                # Delay the message forwarding
-                await asyncio.sleep(300)  # Wait for 5 minutes
-
-                # Forward the message to the destination channel
-                if event.message.media:
-                    await event.client.send_message(channel['destination_channel'], event.message)
-                else:  # If it's a text-only message
-                    modified_text = event.message.text.replace("/qbleech", "/qbleech1")  # Modify text if necessary
-                    await event.client.send_message(channel['destination_channel'], modified_text)
-                break
-    except Exception as e:
-        print(f"Failed to forward message: {str(e)}")
-
-@app.on(events.NewMessage(chats=SOURCE_CHANNEL))  # Listen to multiple source channels
-async def forward_message(event):
-    try:
-        await asyncio.sleep(300)
-        if event.message.media:  # If the message has media
-            await event.client.send_message(DESTINATION_CHANNEL, event.message)
-        else:  # If the message is text-only
-            await event.client.send_message(DESTINATION_CHANNEL, event.message.text)
-    except Exception as e:
-        print(f"Failed to forward the message: {str(e)}")
+        if not channel_data:
+            # If there's no mapping for this source channel, return
+            print(f"No destination channel found for source channel {source_channel_id}")
+            return
         
-@app.on(events.NewMessage(chats=SOURCE_CHANNEL_1))  # Listen to multiple source channels
-async def forward_message(event):
-    try:
-        await asyncio.sleep(300)
-        if event.message.media:
-            await event.client.send_message(DESTINATION_CHANNEL_1, event.message)
-        else:  # If the message is text-only
-            modified_text = event.message.text.replace("/qbleech", "/qbleech1")
-            await event.client.send_message(DESTINATION_CHANNEL_1, modified_text)
-    except Exception as e:
-        print(f"Failed to forward the message: {str(e)}")
+        destination_channel_id = channel_data["destination_channel"]
+        
+        # Fetch replacement data from the ReplacementData collection for the source channel
+        replacement_log = await u_db.replacement_data.find_one({"source_channel": source_channel_id})
 
-@app.on(events.NewMessage(chats=SOURCE_CHANNEL_2))  # Listen to multiple source channels
-async def forward_message(event):
-    try:
-        await asyncio.sleep(300)
-        if event.message.media:
-            await event.client.send_message(DESTINATION_CHANNEL_2, event.message)
-        else:  # If the message is text-only
-            modified_text = event.message.text.replace("/qbleech", "/qbleech2")
-            await event.client.send_message(DESTINATION_CHANNEL_2, modified_text)
+        if replacement_log:
+            # If replacement data exists, perform the text replacement
+            original_text = replacement_log["original_text"]
+            new_text = replacement_log["new_text"]
+
+            # If the message contains the original text, replace it with the new text
+            if event.message.text and original_text in event.message.text:
+                updated_message = event.message.text.replace(original_text, new_text)
+            else:
+                updated_message = event.message.text
+        else:
+            # If no replacement data, proceed with the original message
+            updated_message = event.message.text
+
+        # Forward the updated message to the destination channel
+        if updated_message:
+            # Forward text messages
+            await app.send_message(destination_channel_id, updated_message)
+        elif event.message.media:
+            # Forward media messages (e.g., photos, videos, etc.)
+            await app.forward_messages(destination_channel_id, event.message)
+
+        print(f"Message forwarded from source channel {source_channel_id} to destination channel {destination_channel_id}")
+    
     except Exception as e:
-        print(f"Failed to forward the message: {str(e)}")
+        print(f"Error forwarding message: {e}")
