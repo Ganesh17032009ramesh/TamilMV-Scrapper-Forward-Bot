@@ -2,6 +2,7 @@ from pyrogram import enums
 import os, asyncio
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
+from plugins.db import u_db
 
 API_ID = int(os.environ.get("API_ID",11973721))
 API_HASH = os.environ.get("API_HASH", "5264bf4663e9159565603522f58d3c18")
