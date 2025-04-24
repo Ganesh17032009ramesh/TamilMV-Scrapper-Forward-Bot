@@ -14,14 +14,14 @@ pyrogram.utils.MIN_CHANNEL_ID = -100999999999999
 
 id_pattern = re.compile(r'^.\d+$') 
 
-BOT_TOKEN = os.environ.get("TOKEN", "6502200200:AAExzSPuFw8H4nIjDUHOj3RG8aZv1fZdpoM")
-API_ID = int(os.environ.get("API_ID",11973721))
-API_HASH = os.environ.get("API_HASH", "5264bf4663e9159565603522f58d3c18")
+BOT_TOKEN = os.environ.get("TOKEN", "8025198727:AAF7sQa6srVJwKOxhRyUtgk_rbKG2p26ZC8")
+API_ID = int(os.environ.get("API_ID", "20902603"))
+API_HASH = os.environ.get("API_HASH", "79e5caa103a9e9fb0183390b4800845d")
 BOT_UPTIME  = time.time()
-LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1001821439025"))
+LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002513674254"))
 WEBHOOK = bool(os.environ.get("WEBHOOK", True))
-ADMIN = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '1391556668 1242556540').split()]
-STRING_SESSION = os.environ.get("STRING_SESSION", "1BVtsOKEBu5Pf_Oesjuxt4TIzNijt1iMjJ8hEa3xtURQFrsd0GFYLhS_XFm2iJ61NfFeKR5icfMSu_SWH3eRvvdZ-X7IyOVFZuQ4sHKoiju_WXCH4uQqqd7vB7_9hGyMbDk7mUgjVKNkRg0trupt-5mu8pAeWAZ3US61kBnLKvsMYSjiaiL3uWI3UDfzyNQzFhf_hXWF_XskD0QrMPS87wEd85iNzXBgBE9Sae2haJ8YppGWxhcGtmJDSqHnDSlxh2dFLBZ1K_o7zxE6i1FrOaqEL_gKW87xqc2W43kCsUj-s9A9GyXdP7aUxu1Mku5j3GyMxEWS79Yku7AfxyeGUYhTw5dXGScE=")
+ADMIN = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '6283322330').split()]
+STRING_SESSION = os.environ.get("STRING_SESSION", "BQGtaBQAuA5hibW90nwEkYh4CLA0yR-lwrZ1Eky_XZ0EEutuqXHx9r3PtZPbYltBJK1Y8sODkdnxFQPghZ813ATMwZUU9IvgQfL-dM5a3RqvemSWLV4aJLFz63i0sU7LiiBU4Oet8tMFQhDlRZrTzpmRrIv43od92n_V7HzFADZ_cNdQbE93Y3KI1P3MjKTV5JpAukwTK0D3W4Y6dNZKMbySFOuvLSp2GuctV2fv9kWQivwlcRFpnlbF68M7GVWr_QOhWW8uIy0egAYFeQ4XmhQPiTKNPfRq1o44yTGEBafxgCCXpu-j-GSk8Ej0IRTOIRSJYJTBml2WuPbk8TLU3xlyCkJBowAAAAHCCCOwAQ")
 
 Bot = Client("1TamilMVScrapper", bot_token=BOT_TOKEN, api_id=API_ID, api_hash=API_HASH, plugins=dict(root='plugins'))
 
